@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sausage Seasoning Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      max-width: 600px;
+    }
+    h1, h2, h3 {
+      color: #333;
+    }
+    label {
+      font-weight: bold;
+    }
+    .field-group {
+      margin-bottom: 1em;
+    }
+    .inline-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .inline-group label {
+      margin-right: 8px;
+    }
+    .inline-group input,
+    .inline-group select {
+      margin-right: 8px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    input[type="number"] {
+      width: 6em;
+    }
+    /* Cure-options is hidden by default; moved inline styles into CSS */
+    #cure-options {
+      margin: 0.5em 0 0 1.5em;
+      padding: 0.5em;
+      border-left: 3px solid #ccc;
+      display: none;
+    }
+    /* Custom-PPM input hidden until "Custom..." */
+    #customPpm {
+      display: none;
+    }
+    .note {
+      font-style: italic;
+      color: #555;
+      margin: 0.2em 0 0.8em 0;
+    }
+    button {
+      font-size: 1em;
+      padding: 0.5em 1.5em;
+      cursor: pointer;
+    }
+    #results {
+      border-top: 2px solid #eee;
+      margin-top: 1.5em;
+      padding-top: 1em;
+    }
+    #results p {
+      margin: 0.5em 0;
+    }
+    #results p.warning {
+      color: #b00;
+      font-weight: bold;
+    }
+    /* Simple footnotes styling */
+    ol.footnotes {
+      font-size: 0.85em;
+      margin-top: 2em;
+      border-top: 1px solid #ccc;
+      padding-top: 0.5em;
+    }
+    ol.footnotes li {
+      margin-bottom: 0.3em;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Sausage Seasoning Calculator</h1>
+  <p>Fill in the information below to calculate how much spice mix (rub) and curing salt (if used) to add to your sausage.</p>
+
+  <form id="calcForm">
+    <!-- Meat weight -->
+    <div class="field-group inline-group">
+      <label for="meatWeight">Meat Weight:</label>
+      <input type="number" id="meatWeight" step="0.01" required />
+      <select id="meatUnit">
+        <option value="g">grams (g)</option>
+        <option value="kg">kilograms (kg)</option>
+        <option value="lbs">pounds (lb)</option>
+        <option value="oz">ounces (oz)</option>
+      </select>
+    </div>
+
+    <!-- Filler weight -->
+    <div class="field-group inline-group">
+      <label for="fillerWeight">Filler Weight (if any):</label>
+      <input type="number" id="fillerWeight" step="0.01" value="0" />
+      <select id="fillerUnit">
+        <option value="g">grams (g)</option>
+        <option value="kg">kilograms (kg)</option>
+        <option value="lbs">pounds (lb)</option>
+        <option value="oz">ounces (oz)</option>
+      </select>
+      <span class="note">(Enter 0 if no filler)</span>
+    </div>
+
+    <!-- Water added -->
+    <div class="field-group inline-group">
+      <label for="waterWeight">Water Added (if any):</label>
+      <input type="number" id="waterWeight" step="0.01" value="0" />
+      <select id="waterUnit">
+        <option value="ml">milliliters (ml)</option>
+        <option value="cup">cups (cup)</option>
+        <option value="floz">fluid ounces (fl oz)</option>
+        <option value="g">grams (g)</option>
+      </select>
+      <span class="note">(Liquid added to mix; 1 cup ≈ 236.6 ml)</span>
+    </div>
+
+    <!-- Seasoning sodium info -->
+    <h3>Seasoning (Rub) Information:</h3>
+    <div class="field-group inline-group">
+      <label for="servingSize">Serving Size:</label>
+      <input type="number" id="servingSize" step="0.01" required />
+      <select id="servingUnit">
+        <option value="tsp">tsp</option>
+        <option value="tbsp">Tbsp</option>
+        <option value="cup">cup</option>
+        <option value="g">grams (g)</option>
+        <option value="oz">ounces (oz)</option>
+        <option value="ml">ml</option>
+      </select>
+      <label for="sodiumPerServing" style="margin-left:10px;">Sodium per serving:</label>
+      <input type="number" id="sodiumPerServing" step="1" required /> <span>mg</span>
+    </div>
+    <p class="note">
+      *Use the nutrition label of your spice mix. Example: if 1 tsp serving has 400 mg sodium, enter "1 tsp" and "400 mg".*
+    </p>
+
+    <!-- Target salt percentage -->
+    <div class="field-group">
+      <label for="saltPercent">Target Salt in Sausage (%):</label>
+      <input type="number" id="saltPercent" step="0.1" required />
+      <p class="note">Typical range: <strong>1.5%</strong> (mild) to <strong>2.0%</strong> (normal). For low-sodium diets you might go ~1%, and rarely above 2.5% (very salty).</p>
+    </div>
+
+    <!-- Curing salt option -->
+    <div class="field-group">
+      <label>
+        <input type="checkbox" id="useCure" />
+        Include curing salt (Nitrite)?
+      </label>
+      <div id="cure-options">
+        <label for="cureType">Cure Level:</label>
+        <select id="cureType">
+          <option value="156">USDA Standard – 156 ppm</option>
+          <option value="150">EU Standard – 150 ppm</option>
+          <option value="120">Minimum – 120 ppm</option>
+          <option value="custom">Custom…</option>
+        </select>
+        <input
+          type="number"
+          id="customPpm"
+          value=""
+          step="1"
+          style="width:5em;"
+          disabled
+        /> <span>ppm</span>
+
+        <p class="note">
+          156 ppm is recommended for safety.<sup>27</sup>
+          EU uses 150 ppm.<sup>28</sup>
+          120 ppm is minimum (use only if fully cooking quickly).<sup>29</sup>
+          Adjust if needed.
+        </p>
+      </div>
+    </div>
+
+    <button type="button" id="calcButton">Calculate</button>
+  </form>
+
+  <div id="results"></div>
+
+  <!-- Footnotes placeholder -->
+  <ol class="footnotes">
+    <li id="fn27">Reference for USDA 156 ppm recommendation.</li>
+    <li id="fn28">Reference for EU 150 ppm standard.</li>
+    <li id="fn29">Reference for minimum 120 ppm guideline.</li>
+  </ol>
+
+  <script>
+    // Unit conversion factors
+    const unitToGrams = { g:1, kg:1000, lbs:453.59237, oz:28.3495 };
+    const unitToMl    = { ml:1, cup:236.588, floz:29.5735, tsp:4.92892, tbsp:14.7868 };
+
+    // Format helper
+    function fmt(num) {
+      return (Math.round(num * 100) / 100).toLocaleString();
+    }
+
+    // Show/hide cure-options when checkbox toggled
+    document.getElementById('useCure').addEventListener('change', e => {
+      document.getElementById('cure-options').style.display = e.target.checked ? 'block' : 'none';
+    });
+
+    // Show/hide & sync custom-PPM input
+    const cureType  = document.getElementById('cureType');
+    const customPpm = document.getElementById('customPpm');
+
+    cureType.addEventListener('change', function() {
+      if (this.value === 'custom') {
+        customPpm.style.display = 'inline-block';
+        customPpm.disabled    = false;
+        customPpm.value       = '';
+        customPpm.focus();
+      } else {
+        customPpm.style.display = 'none';
+        customPpm.disabled    = true;
+        customPpm.value       = this.value;
+      }
+    });
+
+    // Calculation logic
+    document.getElementById('calcButton').addEventListener('click', function() {
+      // Gather inputs...
+      const meatWeight       = parseFloat(document.getElementById('meatWeight').value);
+      const meatUnit         = document.getElementById('meatUnit').value;
+      const fillerWeight     = parseFloat(document.getElementById('fillerWeight').value) || 0;
+      const fillerUnit       = document.getElementById('fillerUnit').value;
+      const waterWeight      = parseFloat(document.getElementById('waterWeight').value) || 0;
+      const waterUnit        = document.getElementById('waterUnit').value;
+      const servingSize      = parseFloat(document.getElementById('servingSize').value);
+      const servingUnit      = document.getElementById('servingUnit').value;
+      const sodiumPerServing = parseFloat(document.getElementById('sodiumPerServing').value);
+      const saltPercent      = parseFloat(document.getElementById('saltPercent').value);
+      const useCure          = document.getElementById('useCure').checked;
+
+      let curePpm = 0;
+      if (useCure) {
+        const ct = document.getElementById('cureType').value;
+        curePpm = (ct === 'custom') ? parseFloat(customPpm.value) : parseFloat(ct);
+      }
+
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '';
+
+      // Validation
+      if (!meatWeight || meatWeight <= 0 || !saltPercent || saltPercent < 0) {
+        resultsDiv.innerHTML = '<p class="warning">Please enter valid values for meat weight and salt percentage.</p>';
+        return;
+      }
+      if (!servingSize || servingSize <= 0 || !sodiumPerServing || sodiumPerServing < 0) {
+        resultsDiv.innerHTML = '<p class="warning">Please enter valid seasoning serving info (serving size and sodium).</p>';
+        return;
+      }
+      if (useCure && (!curePpm || curePpm <= 0)) {
+        resultsDiv.innerHTML = '<p class="warning">Please enter a valid nitrite level (ppm) for curing salt.</p>';
+        return;
+      }
+
+      // Convert to grams
+      const meat_g   = meatWeight   * (unitToGrams[meatUnit] || 1);
+      const filler_g = fillerWeight * (unitToGrams[fillerUnit] || 1);
+      let water_g;
+      if (unitToGrams[waterUnit]) {
+        water_g = waterWeight * unitToGrams[waterUnit];
+      } else {
+        water_g = waterWeight * (unitToMl[waterUnit] || 1);
+      }
+      const totalWeight_g = meat_g + filler_g + water_g;
+      const saltNeeded_g  = (saltPercent/100) * totalWeight_g;
+
+      // Curing salt calculations
+      let cureNeeded_g = 0, cureSalt_g = 0;
+      if (useCure) {
+        const totalWeight_kg     = totalWeight_g / 1000;
+        const nitriteNeeded_mg   = curePpm * totalWeight_kg;
+        cureNeeded_g = nitriteNeeded_mg / 62.5;
+        cureSalt_g   = cureNeeded_g * 0.9375;
+      }
+
+      // Salt from seasoning
+      let seasoningSaltNeeded_g = saltNeeded_g - cureSalt_g;
+      if (seasoningSaltNeeded_g < 0) seasoningSaltNeeded_g = 0;
+      const sodiumNeededFromSeasoning_mg = seasoningSaltNeeded_g * 393.6;
+
+      // Determine serving weight
+      let serving_g = 0;
+      if (['tsp','tbsp','cup','ml'].includes(servingUnit)) {
+        const vol_ml = servingSize * (unitToMl[servingUnit] || 1);
+        serving_g = vol_ml;
+      } else {
+        serving_g = servingSize * (unitToGrams[servingUnit] || 1);
+      }
+
+      // Servings needed
+      const servingsNeeded = sodiumNeededFromSeasoning_mg / sodiumPerServing;
+
+      // Build output
+      const lines = [];
+      lines.push(`<p>Using <strong>${fmt(saltPercent)}%</strong> salt for a total mixture weight of <strong>${fmt(totalWeight_g)}</strong> g:</p>`);
+
+      // Seasoning line
+      let seasoningText;
+      if (servingsNeeded <= 0) {
+        seasoningText = 'No seasoning needed for salt (cure provides enough salt).';
+      } else {
+        const qty     = servingsNeeded * servingSize;
+        const unit    = servingUnit;
+        let qtyText   = `${fmt(qty)} ${unit}${qty !== 1 ? 's' : ''}`;
+        // simplify tsp→Tbsp/cup
+        if (unit === 'tsp' && qty >= 3) {
+          const tb = qty/3;
+          qtyText += ` (≈ ${fmt(tb)} Tbsp)`;
+        }
+        seasoningText = `${qtyText} of seasoning`;
+      }
+      lines.push(`<p><strong>Seasoning Required:</strong> ${seasoningText}</p>`);
+
+      // Curing line
+      if (useCure) {
+        const cureTsp = cureNeeded_g / 5.67;
+        lines.push(`<p><strong>Curing Salt Required:</strong> ${fmt(cureNeeded_g)} g Prague Powder #1 (≈ ${fmt(cureTsp)} tsp) to provide ~${curePpm} ppm nitrite.</p>`);
+      }
+
+      // Sodium info
+      const totalSodium_mg = saltNeeded_g * 393.6;
+      const sodiumPer100g  = (totalSodium_mg / totalWeight_g) * 100;
+      lines.push(`<p>This adds approx. <strong>${fmt(totalSodium_mg)}</strong> mg sodium in total.</p>`);
+      lines.push(`<p>≈ <strong>${fmt(sodiumPer100g)}</strong> mg sodium per 100 g of sausage.</p>`);
+
+      // Notes
+      if (useCure) {
+        lines.push(`<p><em>Note:</em> Cook or properly dry-cure before eating. Keep refrigerated until ready.</p>`);
+      } else {
+        lines.push(`<p><em>Note:</em> Fresh sausage (no nitrite). Cook thoroughly to at least 160 °F (71 °C).</p>`);
+      }
+      lines.push(`<p><em>Reminder:</em> Add-ins like cheese or pickles contain salt. Adjust seasoning accordingly.</p>`);
+
+      resultsDiv.innerHTML = lines.join('\n');
+    });
+  </script>
+</body>
+</html>
